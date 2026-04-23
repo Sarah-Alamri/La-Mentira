@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Mentira - A New Shade of Refresh</title>
+    <style>
+        :root {
+            --pastel-yellow: #fdfd96;
+            --dark-pink: #e75480;
+            --light-pink: #f8c8dc;
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #fce4ec;
+            background-image: url('bg_pattern.png');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        header {
+            background-color: var(--pastel-yellow);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid var(--dark-pink);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo-img { max-width: 180px; height: auto; }
+        nav { margin-top: 15px; }
+        nav button {
+            background: none;
+            border: none;
+            color: var(--dark-pink);
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 15px;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        section {
+            display: none;
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            min-height: 60vh;
+        }
+        #home {
+            display: block;
+            text-align: center;
+            background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('home_bg.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 120px 20px;
+        }
+        #home h1 { font-size: 3.5rem; margin: 0; }
+        #home p { font-size: 1.5rem; font-style: italic; margin-bottom: 30px; }
+        .action-btn {
+            background-color: var(--dark-pink);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .drink-card {
+            background: white;
+            padding: 15px;
+            border: 2px solid var(--pastel-yellow);
+            border-radius: 15px;
+            text-align: center;
+        }
+        .drink-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .remove-x { color: red; cursor: pointer; font-weight: bold; border: none; background: none; font-size: 1.2rem; }
+        .receipt-box { background: var(--pastel-yellow); padding: 25px; border-radius: 15px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--dark-pink); border-radius: 5px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.png" class="logo-img" alt="La Mentira Logo">
+    <nav>
+        <button onclick="showPage('home')">Home</button>
+        <button onclick="showPage('menu')">Menu</button>
+        <button onclick="showPage('cart')">Cart (<span id="count">0</span>)</button>
+    </nav>
+</header>
+
+<section id="home">
+    <h1>La Mentira</h1>
+    <p>A New Shade of Refresh</p>
+    <button class="action-btn" onclick="showPage('menu')">Show Menu</button>
+</section>
+
+<section id="menu">
+    <h2 style="text-align:center; color: var(--dark-pink);">Select Your Drink</h2>
+    <div class="menu-grid" id="menu-items"></div>
+</section>
+
+<section id="cart">
+    <h2 style="color: var(--dark-pink);">Your Cart</h2>
+    <div id="cart-list"></div>
+    <h3 style="text-align: right;">Total: <span id="total-price">0</span> SAR</h3>
+    <button class="action-btn" style="width: 100%;" onclick="showPage('checkout')">Go to Checkout</button>
+</section>
+
+<section id="checkout">
+    <div class="receipt-box">
+        <h2>Order Receipt</h2>
+        <div id="summary"></div>
+        <input type="text" id="custName" placeholder="Enter Name">
+        <input type="text" id="custClass" placeholder="Enter Class">
+        <button class="action-btn" style="width: 100%; margin-top: 10px;" onclick="finish()">Place Order</button>
+    </div>
+</section>
+
+<script>
+    const drinks = [
+        { id: 1, name: "Marana", price: 23, img: "drink1.png" },
+        { id: 2, name: "Melondia", price: 22, img: "drink2.png" },
+        { id: 3, name: "Blue Lagoon", price: 20, img: "drink3.png" },
+        { id: 4, name: "Mohenzo", price: 23, img: "drink4.png" },
+        { id: 5, name: "Perzano", price: 23, img: "drink5.png" },
+        { id: 6, name: "Solrano Passion", price: 22, img: "drink6.png" }
+    ];
+
+    let cart = [];
+
+    function showPage(id) {
+        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'cart') updateCartUI();
+        if(id === 'checkout') updateSummary();
+    }
+
+    function init() {
+        const grid = document.getElementById('menu-items');
+        drinks.forEach(d => {
+            grid.innerHTML += `
+                <div class="drink-card">
+                    <img src="${d.img}" alt="${d.name}" onerror="this.src='https://via.placeholder.com/200?text=Drink'">
+                    <h3>${d.name}</h3>
+                    <p>${d.price} SAR</p>
+                    <button class="action-btn" style="padding: 10px 20px; font-size: 0.9rem;" onclick="addToCart(${d.id})">Add to Cart</button>
+                </div>
+            `;
+        });
+    }
+
+    function addToCart(id) {
+        const d = drinks.find(i => i.id === id);
+        cart.push({...d, cartId: Date.now() + Math.random()});
+        document.getElementById('count').innerText = cart.length;
+        alert(d.name + " added!");
+    }
+
+    function updateCartUI() {
+        const list = document.getElementById('cart-list');
+        list.innerHTML = cart.length === 0 ? '<p>Your cart is empty.</p>' : '';
+        let total = 0;
+        cart.forEach((item, index) => {
+            total += item.price;
+            list.innerHTML += `
+                <div class="cart-item">
+                    <span>${item.name} - ${item.price} SAR</span>
+                    <button class="remove-x" onclick="removeItem(${index})">X</button>
+                </div>
+            `;
+        });
+        document.getElementById('total-price').innerText = total;
+    }
+
+    function removeItem(index) {
+        cart.splice(index, 1);
+        updateCartUI();
+        document.getElementById('count').innerText = cart.length;
+    }
+
+    function updateSummary() {
+        const s = document.getElementById('summary');
+        let total = cart.reduce((sum, i) => sum + i.price, 0);
+        s.innerHTML = `<p><strong>Drinks:</strong> ${cart.map(i => i.name).join(', ')}</p><p><strong>Total:</strong> ${total} SAR</p>`;
+    }
+
+    function finish() {
+        const name = document.getElementById('custName').value;
+        const cls = document.getElementById('custClass').value;
+        if(!name || !cls || cart.length === 0) return alert("Please add drinks and fill in your details!");
+        alert(`Order Received!\nName: ${name}\nClass: ${cls}\nItems: ${cart.map(i => i.name).join(', ')}`);
+        cart = [];
+        document.getElementById('count').innerText = '0';
+        showPage('home');
+    }
+
+    init();
+</script>
+
+</body>
+</html>
